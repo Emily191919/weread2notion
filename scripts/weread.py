@@ -101,7 +101,7 @@ def check(bookId):
     """检查是否已经插入过 如果已经插入了就删除"""
     time.sleep(0.3)
     filter = {"property": "BookId", "rich_text": {"equals": bookId}}
-    response = client.databases.query(database_id=database_id, filter=filter)
+    response = query_database(database_id=database_id, filter=filter)
     for result in response["results"]:
         time.sleep(0.3)
         try:
@@ -214,12 +214,18 @@ def get_sort():
             "direction": "descending",
         }
     ]
-    response = client.databases.query(
+    response = query_database(
         database_id=database_id, filter=filter, sorts=sorts, page_size=1
     )
     if len(response.get("results")) == 1:
         return response.get("results")[0].get("properties").get("Sort").get("number")
     return 0
+
+
+def query_database(database_id, **kwargs):
+    if hasattr(client, "data_sources") and hasattr(client.data_sources, "query"):
+        return client.data_sources.query(data_source_id=database_id, **kwargs)
+    return client.databases.query(database_id=database_id, **kwargs)
 
 
 def get_children(chapter, summary, bookmark_list):
