@@ -97,11 +97,28 @@ def get_review_list(bookId):
     return summary, reviews
 
 
+def query_database(filter=None, sorts=None, page_size=None):
+    params = {}
+    if filter is not None:
+        params["filter"] = filter
+    if sorts is not None:
+        params["sorts"] = sorts
+    if page_size is not None:
+        params["page_size"] = page_size
+
+    if hasattr(client.databases, "query"):
+        return client.databases.query(database_id=database_id, **params)
+
+    database = client.databases.retrieve(database_id=database_id)
+    data_source_id = database["data_sources"][0]["id"]
+    return client.data_sources.query(data_source_id=data_source_id, **params)
+
+
 def check(bookId):
     """检查是否已经插入过 如果已经插入了就删除"""
     time.sleep(0.3)
     filter = {"property": "BookId", "rich_text": {"equals": bookId}}
-    response = client.databases.query(database_id=database_id, filter=filter)
+    response = query_database(filter=filter)
     for result in response["results"]:
         time.sleep(0.3)
         try:
@@ -214,9 +231,7 @@ def get_sort():
             "direction": "descending",
         }
     ]
-    response = client.databases.query(
-        database_id=database_id, filter=filter, sorts=sorts, page_size=1
-    )
+    response = query_database(filter=filter, sorts=sorts, page_size=1)
     if len(response.get("results")) == 1:
         return response.get("results")[0].get("properties").get("Sort").get("number")
     return 0
